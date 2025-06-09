@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../config/axios';
 import toast from 'react-hot-toast';
 import { Save, ArrowLeft, Plus, X, Loader } from 'lucide-react';
-
+import { uploadImageToCloudinary } from '../config/cloudinary';
 interface Category {
   _id: string;
   name: string;
@@ -62,9 +62,22 @@ const ProductFormPage: React.FC = () => {
   const isEditing = !!id;
 
   // Get filtered categories based on selected product type
-  const filteredCategories = categories?.filter(cat => 
-    cat.productType === selectedProductType?._id
-  ) || [];
+  const filteredCategories = React.useMemo(() => {
+    if (!formData.productType) return categories;
+    
+    const selectedType = productTypes.find(type => type.value === formData.productType);
+    console.log('Selected Type:', selectedType);
+    
+    return categories.filter(category => {
+      const match = category.productType === selectedType?.value;
+      console.log(`Category ${category.name}:`, { 
+        categoryProductType: category.productType, 
+        selectedTypeId: selectedType?._id,
+        matches: match 
+      });
+      return match;
+    });
+  }, [categories, formData.productType, productTypes]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,11 +87,15 @@ const ProductFormPage: React.FC = () => {
           axiosInstance.get('/producttypes')
         ]);
         
-        setCategories(categoriesResponse.data || []);
-        setProductTypes(productTypesResponse.data || []);
-        console.log(categoriesResponse.data);
+        setCategories(categoriesResponse.data);
+        setProductTypes(productTypesResponse.data);
+        
+        // Debug log
+        console.log('Categories:', categoriesResponse.data);
+        console.log('Product Types:', productTypesResponse.data);
       } catch (err: any) {
         toast.error('Failed to fetch required data');
+        console.error('Fetch error:', err);
       }
     };
 
@@ -88,17 +105,13 @@ const ProductFormPage: React.FC = () => {
           setLoading(true);
           const { data } = await axiosInstance.get(`/products/${id}`);
           setFormData({
-            name: data.name || '',
+            ...initialFormData,
+            ...data,
             price: data.price?.toString() || '',
             discountPrice: data.discountPrice?.toString() || '',
-            brand: data.brand || '',
             category: data.category?._id || '',
             countInStock: data.countInStock?.toString() || '',
-            description: data.description || '',
-            images: data.images || [],
-            productType: data.productType || 'dress',
-            featured: data.featured || false,
-            attributes: data.attributes || {},
+            images: data.images || [], // Store complete image URLs
           });
         } catch (err: any) {
           toast.error('Failed to fetch product');
@@ -119,15 +132,16 @@ const ProductFormPage: React.FC = () => {
     const { name, value, type } = e.target as HTMLInputElement;
     
     if (name === 'productType') {
-      const selected = productTypes.find(type => type.value === value);
-      setSelectedProductType(selected?._id || '');
-    }
-    
-    if (type === 'checkbox') {
+      setFormData(prev => ({ 
+        ...prev, 
+        [name]: value,
+        category: '' // Reset category when product type changes
+      }));
+    } else if (type === 'checkbox') {
       const { checked } = e.target as HTMLInputElement;
-      setFormData((prev) => ({ ...prev, [name]: checked }));
+      setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
@@ -155,33 +169,27 @@ const ProductFormPage: React.FC = () => {
     setFormData((prev) => ({ ...prev, attributes: newAttributes }));
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const files = e.target.files;
+  if (!files || files.length === 0) return;
+
+  try {
+    setImageUploading(true);
+    const imageUrl = await uploadImageToCloudinary(files[0]);
     
-    const formData = new FormData();
-    formData.append('image', files[0]);
-    
-    try {
-      setImageUploading(true);
-      const { data } = await axiosInstance.post('/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, data.path],
-      }));
-      
-      toast.success('Image uploaded successfully');
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to upload image');
-    } finally {
-      setImageUploading(false);
-    }
-  };
+    // Store the complete URL in the form data
+    setFormData((prev) => ({
+      ...prev,
+      images: [...prev.images, imageUrl],
+    }));
+    toast.success('Image uploaded successfully');
+  } catch (err: any) {
+    toast.error('Failed to upload image');
+    console.error('Upload error:', err);
+  } finally {
+    setImageUploading(false);
+  }
+};
 
   const handleImageRemove = (index: number) => {
     setFormData((prev) => ({
@@ -195,7 +203,7 @@ const ProductFormPage: React.FC = () => {
     
     try {
       setLoading(true);
-            const selectedProductType = productTypes.find(type => type.value === formData.productType);
+      const selectedProductType = productTypes.find(type => type.value === formData.productType);
 
       const productData = {
         name: formData.name,
@@ -205,8 +213,8 @@ const ProductFormPage: React.FC = () => {
         category: formData.category,
         countInStock: parseInt(formData.countInStock),
         description: formData.description,
-        images: formData.images,
-        productType: selectedProductType?._id, 
+        images: formData.images, // Send complete image URLs
+        productType: selectedProductType?.value,
         featured: formData.featured,
         attributes: formData.attributes,
       };
@@ -356,6 +364,11 @@ const ProductFormPage: React.FC = () => {
                   </option>
                 ))}
               </select>
+              {filteredCategories.length === 0 && formData.productType && (
+                <p className="mt-1 text-sm text-red-500">
+                  No categories available for the selected product type
+                </p>
+              )}
             </div>
 
             <div>
@@ -475,12 +488,12 @@ const ProductFormPage: React.FC = () => {
               {formData.images.map((image, index) => (
                 <div key={index} className="relative border rounded-md overflow-hidden h-40">
                   <img 
-                    src={`http://localhost:5000${image}`}
+                    src={image}
                     alt={`Product ${index + 1}`} 
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = '/placeholder.jpg'; // Add a placeholder image
+                      target.src = '/placeholder.jpg';
                       console.error('Failed to load image:', image);
                     }}
                   />
@@ -493,11 +506,6 @@ const ProductFormPage: React.FC = () => {
                   </button>
                 </div>
               ))}
-              {formData.images.length === 0 && (
-                <div className="border rounded-md overflow-hidden h-40 flex items-center justify-center bg-gray-50">
-                  <p className="text-gray-400 text-sm">No images uploaded</p>
-                </div>
-              )}
             </div>
           </div>
 

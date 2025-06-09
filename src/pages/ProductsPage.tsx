@@ -218,7 +218,7 @@ const ProductsPage: React.FC = () => {
                       <div className="h-10 w-10 rounded-md overflow-hidden bg-gray-100">
                         {product.images && product.images[0] ? (
                           <img 
-                            src={`http://localhost:5000${product.images[0]}`}
+                            src={`${product.images[0]}`}
                             alt={product.name} 
                             className="h-full w-full object-cover"
                           />
