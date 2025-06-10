@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../config/axios';
 
 interface User {
   _id: string;
@@ -11,72 +11,51 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
-  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const userFromStorage = localStorage.getItem('ewaUser');
-    if (userFromStorage) {
-      const parsedUser = JSON.parse(userFromStorage);
+    const userInfo = localStorage.getItem('ewaUser');
+    if (userInfo) {
+      const parsedUser = JSON.parse(userInfo);
       setUser(parsedUser);
-      
-      // Set default auth header for all axios requests
-      axios.defaults.headers.common[
-        'Authorization'
-      ] = `Bearer ${parsedUser.token}`;
+      setIsAuthenticated(true);
     }
-    setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const { data } = await axios.post('http://localhost:5000/api/users/login', { email, password });
+      const { data } = await axiosInstance.post('/users/login', { email, password });
       
-      // Only allow admin users to login
-      if (!data.isAdmin) {
-        throw new Error('Not authorized as admin');
+      if (data && data.isAdmin) {
+        localStorage.setItem('ewaUser', JSON.stringify(data));
+        setUser(data);
+        setIsAuthenticated(true);
+      } else {
+        throw new Error('Unauthorized access');
       }
-      
-      setUser(data);
-
-      console.log('User logged in:', data);
-      localStorage.setItem('ewaUser', JSON.stringify(data));
-      
-      // Set default auth header for all axios requests
-      axios.defaults.headers.common[
-        'Authorization'
-      ] = `Bearer ${data.token}`;
-      
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      console.error('Login error:', error);
+      throw error.response?.data?.message || 'Invalid credentials';
     }
   };
 
   const logout = () => {
-    setUser(null);
     localStorage.removeItem('ewaUser');
-    delete axios.defaults.headers.common['Authorization'];
+    setUser(null);
+    setIsAuthenticated(false);
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        loading,
-        login,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );
