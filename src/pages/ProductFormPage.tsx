@@ -7,41 +7,60 @@ import { uploadImageToCloudinary } from '../config/cloudinary';
 interface Category {
   _id: string;
   name: string;
-  productType: string;
-}
-
-interface ProductType {
-  _id: string;
-  value: string;
-  label: string;
 }
 
 interface ProductFormData {
   name: string;
   price: string;
   discountPrice: string;
+  oldPrice: string;
   brand: string;
   category: string;
   countInStock: string;
   description: string;
   images: string[];
-  productType: string;
   featured: boolean;
   attributes: Record<string, string>;
+  color: string;
+  material: string;
+  size: string[];
+  careInstructions: string;
+  availability: string;
+  sku: string;
+  countryOfOrigin: string;
+  warranty: string;
+  deliveryInfo: string;
+  offers: string[];
+  features: string[];
+  status: 'draft' | 'live';
+  stock: string;
 }
 
 const initialFormData: ProductFormData = {
   name: '',
   price: '',
   discountPrice: '',
+  oldPrice: '',
   brand: '',
   category: '',
   countInStock: '',
   description: '',
   images: [],
-  productType: 'dress',
   featured: false,
   attributes: {},
+  color: '',
+  material: '',
+  size: [],
+  careInstructions: '',
+  availability: 'In Stock',
+  sku: '',
+  countryOfOrigin: 'India',
+  warranty: '',
+  deliveryInfo: '',
+  offers: [],
+  features: [],
+  status: 'draft',
+  stock: '',
 };
 
 interface AttributeInput {
@@ -54,45 +73,20 @@ const ProductFormPage: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [currentAttribute, setCurrentAttribute] = useState<AttributeInput>({ key: '', value: '' });
-  const [selectedProductType, setSelectedProductType] = useState<string>('');
+  const [currentOffer, setCurrentOffer] = useState('');
+  const [currentFeature, setCurrentFeature] = useState('');
+  const [currentSize, setCurrentSize] = useState('');
   const isEditing = !!id;
-
-  // Get filtered categories based on selected product type
-  const filteredCategories = React.useMemo(() => {
-    if (!formData.productType) return categories;
-    
-    const selectedType = productTypes.find(type => type.value === formData.productType);
-    console.log('Selected Type:', selectedType);
-    
-    return categories.filter(category => {
-      const match = category.productType === selectedType?.value;
-      console.log(`Category ${category.name}:`, { 
-        categoryProductType: category.productType, 
-        selectedTypeId: selectedType?._id,
-        matches: match 
-      });
-      return match;
-    });
-  }, [categories, formData.productType, productTypes]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [categoriesResponse, productTypesResponse] = await Promise.all([
-          axiosInstance.get('/categories'),
-          axiosInstance.get('/producttypes')
-        ]);
+        const categoriesResponse = await axiosInstance.get('/categories');
         
         setCategories(categoriesResponse.data);
-        setProductTypes(productTypesResponse.data);
-        
-        // Debug log
-        console.log('Categories:', categoriesResponse.data);
-        console.log('Product Types:', productTypesResponse.data);
       } catch (err: any) {
         toast.error('Failed to fetch required data');
         console.error('Fetch error:', err);
@@ -109,9 +103,15 @@ const ProductFormPage: React.FC = () => {
             ...data,
             price: data.price?.toString() || '',
             discountPrice: data.discountPrice?.toString() || '',
+            oldPrice: data.oldPrice?.toString() || '',
             category: data.category?._id || '',
             countInStock: data.countInStock?.toString() || '',
+            stock: data.stock?.toString() || '',
             images: data.images || [], // Store complete image URLs
+            size: data.size || [],
+            offers: data.offers || [],
+            features: data.features || [],
+            status: data.status || 'draft',
           });
         } catch (err: any) {
           toast.error('Failed to fetch product');
@@ -131,13 +131,7 @@ const ProductFormPage: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
     
-    if (name === 'productType') {
-      setFormData(prev => ({ 
-        ...prev, 
-        [name]: value,
-        category: '' // Reset category when product type changes
-      }));
-    } else if (type === 'checkbox') {
+    if (type === 'checkbox') {
       const { checked } = e.target as HTMLInputElement;
       setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
@@ -167,6 +161,57 @@ const ProductFormPage: React.FC = () => {
     const newAttributes = { ...formData.attributes };
     delete newAttributes[key];
     setFormData((prev) => ({ ...prev, attributes: newAttributes }));
+  };
+
+  const handleOfferAdd = () => {
+    if (currentOffer.trim()) {
+      setFormData((prev) => ({
+        ...prev,
+        offers: [...prev.offers, currentOffer.trim()],
+      }));
+      setCurrentOffer('');
+    }
+  };
+
+  const handleOfferRemove = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      offers: prev.offers.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleFeatureAdd = () => {
+    if (currentFeature.trim()) {
+      setFormData((prev) => ({
+        ...prev,
+        features: [...prev.features, currentFeature.trim()],
+      }));
+      setCurrentFeature('');
+    }
+  };
+
+  const handleFeatureRemove = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      features: prev.features.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSizeAdd = () => {
+    if (currentSize.trim()) {
+      setFormData((prev) => ({
+        ...prev,
+        size: [...prev.size, currentSize.trim()],
+      }));
+      setCurrentSize('');
+    }
+  };
+
+  const handleSizeRemove = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      size: prev.size.filter((_, i) => i !== index),
+    }));
   };
 
 const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,20 +248,32 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     
     try {
       setLoading(true);
-      const selectedProductType = productTypes.find(type => type.value === formData.productType);
 
       const productData = {
         name: formData.name,
         price: parseFloat(formData.price),
         discountPrice: formData.discountPrice ? parseFloat(formData.discountPrice) : 0,
+        oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : 0,
         brand: formData.brand,
         category: formData.category,
         countInStock: parseInt(formData.countInStock),
+        stock: parseInt(formData.stock),
         description: formData.description,
         images: formData.images, // Send complete image URLs
-        productType: selectedProductType?.value,
         featured: formData.featured,
         attributes: formData.attributes,
+        color: formData.color,
+        material: formData.material,
+        size: formData.size,
+        careInstructions: formData.careInstructions,
+        availability: formData.availability,
+        sku: formData.sku,
+        countryOfOrigin: formData.countryOfOrigin,
+        warranty: formData.warranty,
+        deliveryInfo: formData.deliveryInfo,
+        offers: formData.offers,
+        features: formData.features,
+        status: formData.status,
       };
       
       if (isEditing) {
@@ -263,26 +320,6 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
             <h2 className="text-lg font-medium">Basic Information</h2>
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Product Type*
-              </label>
-              <select
-                name="productType"
-                value={formData.productType}
-                onChange={handleChange}
-                required
-                className="input"
-              >
-                <option value="">Select Product Type</option>
-                {productTypes.map((type) => (
-                  <option key={type._id} value={type.value}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Product Name*
@@ -333,6 +370,22 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Old Price
+              </label>
+              <input
+                type="number"
+                name="oldPrice"
+                value={formData.oldPrice}
+                onChange={handleChange}
+                className="input"
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Brand*
               </label>
               <input
@@ -358,17 +411,12 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 className="input"
               >
                 <option value="">Select Category</option>
-                {filteredCategories.map((category) => (
+                {categories.map((category) => (
                   <option key={category._id} value={category._id}>
                     {category.name}
                   </option>
                 ))}
               </select>
-              {filteredCategories.length === 0 && formData.productType && (
-                <p className="mt-1 text-sm text-red-500">
-                  No categories available for the selected product type
-                </p>
-              )}
             </div>
 
             <div>
@@ -385,6 +433,124 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 placeholder="0"
                 min="0"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Stock*
+              </label>
+              <input
+                type="number"
+                name="stock"
+                value={formData.stock}
+                onChange={handleChange}
+                required
+                className="input"
+                placeholder="0"
+                min="0"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Color
+              </label>
+              <input
+                type="text"
+                name="color"
+                value={formData.color}
+                onChange={handleChange}
+                className="input"
+                placeholder="e.g., Black, Red"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Material
+              </label>
+              <input
+                type="text"
+                name="material"
+                value={formData.material}
+                onChange={handleChange}
+                className="input"
+                placeholder="e.g., Cotton, Leather"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                SKU
+              </label>
+              <input
+                type="text"
+                name="sku"
+                value={formData.sku}
+                onChange={handleChange}
+                className="input"
+                placeholder="e.g., US-HB-001"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Country of Origin
+              </label>
+              <input
+                type="text"
+                name="countryOfOrigin"
+                value={formData.countryOfOrigin}
+                onChange={handleChange}
+                className="input"
+                placeholder="India"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Warranty
+              </label>
+              <input
+                type="text"
+                name="warranty"
+                value={formData.warranty}
+                onChange={handleChange}
+                className="input"
+                placeholder="e.g., 6 months, 1 year"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Availability
+              </label>
+              <select
+                name="availability"
+                value={formData.availability}
+                onChange={handleChange}
+                className="input"
+              >
+                <option value="In Stock">In Stock</option>
+                <option value="Out of Stock">Out of Stock</option>
+                <option value="Pre-order">Pre-order</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Product Status*
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                required
+                className="input"
+              >
+                <option value="draft">Draft</option>
+                <option value="live">Live</option>
+              </select>
             </div>
 
             <div>
@@ -416,6 +582,70 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
               className="input h-32"
               placeholder="Enter product description"
             ></textarea>
+          </div>
+
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-medium mb-4">Care Instructions & Delivery</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Care Instructions
+                </label>
+                <textarea
+                  name="careInstructions"
+                  value={formData.careInstructions}
+                  onChange={handleChange}
+                  className="input h-20"
+                  placeholder="e.g., Machine wash cold, Dry clean only"
+                ></textarea>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Delivery Info
+                </label>
+                <textarea
+                  name="deliveryInfo"
+                  value={formData.deliveryInfo}
+                  onChange={handleChange}
+                  className="input h-20"
+                  placeholder="e.g., Delivered in 3-5 business days"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-medium mb-4">Product Sizes</h2>
+            <div className="mb-4 flex gap-2">
+              <input
+                type="text"
+                value={currentSize}
+                onChange={(e) => setCurrentSize(e.target.value)}
+                className="input"
+                placeholder="Size (e.g., S, M, L, XL)"
+              />
+              <button
+                type="button"
+                onClick={handleSizeAdd}
+                className="btn btn-secondary"
+              >
+                <Plus className="h-5 w-5 mr-1" /> Add
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {formData.size.map((size, index) => (
+                <div key={index} className="flex items-center bg-gray-100 px-3 py-1 rounded-md">
+                  <span>{size}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSizeRemove(index)}
+                    className="ml-2 text-red-500 hover:text-red-700"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="p-6 border-b border-gray-200">
@@ -457,6 +687,74 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                     className="text-red-500 hover:text-red-700"
                   >
                     <X className="h-5 w-5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-medium mb-4">Product Offers</h2>
+            <div className="mb-4 flex gap-2">
+              <input
+                type="text"
+                value={currentOffer}
+                onChange={(e) => setCurrentOffer(e.target.value)}
+                className="input"
+                placeholder="Offer (e.g., 10% off on first purchase)"
+              />
+              <button
+                type="button"
+                onClick={handleOfferAdd}
+                className="btn btn-secondary"
+              >
+                <Plus className="h-5 w-5 mr-1" /> Add
+              </button>
+            </div>
+            <div className="space-y-2">
+              {formData.offers.map((offer, index) => (
+                <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
+                  <span>{offer}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleOfferRemove(index)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-medium mb-4">Product Features</h2>
+            <div className="mb-4 flex gap-2">
+              <input
+                type="text"
+                value={currentFeature}
+                onChange={(e) => setCurrentFeature(e.target.value)}
+                className="input"
+                placeholder="Feature (e.g., Adjustable strap)"
+              />
+              <button
+                type="button"
+                onClick={handleFeatureAdd}
+                className="btn btn-secondary"
+              >
+                <Plus className="h-5 w-5 mr-1" /> Add
+              </button>
+            </div>
+            <div className="space-y-2">
+              {formData.features.map((feature, index) => (
+                <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
+                  <span>{feature}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleFeatureRemove(index)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               ))}

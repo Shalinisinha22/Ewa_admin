@@ -16,7 +16,6 @@ import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import CustomersPage from './pages/CustomersPage';
 import SettingsPage from './pages/SettingsPage';
-import ProductTypesPage from './pages/ProductTypesPage';
 import CouponsPage from './pages/CouponsPage';
 import BannersPage from './pages/BannersPage';
 import PagesPage from './pages/PagesPage';
@@ -68,7 +67,6 @@ function App() {
         <Route path="orders/:id" element={<OrderDetailPage />} />
         <Route path="customers" element={<CustomersPage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="product-types" element={<ProductTypesPage />} />
         <Route path="coupons" element={<CouponsPage />} />
         <Route path="banners" element={<BannersPage />} />
         <Route path="pages" element={<PagesPage />} />

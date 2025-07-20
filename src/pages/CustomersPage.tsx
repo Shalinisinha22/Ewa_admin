@@ -7,8 +7,15 @@ interface Customer {
   _id: string;
   name: string;
   email: string;
+  phone?: string;
   isAdmin: boolean;
   createdAt: string;
+  totalOrders?: number;
+  totalSpent?: number;
+  contactDetails?: {
+    phone?: string;
+    address?: string;
+  };
 }
 
 interface ApiResponse {
@@ -145,6 +152,9 @@ const CustomersPage: React.FC = () => {
                   <tr>
                     <th>Customer</th>
                     <th>Email</th>
+                    <th>Contact</th>
+                    <th>Orders</th>
+                    <th>Total Spent</th>
                     <th>Role</th>
                     <th>Joined</th>
                     <th>Actions</th>
@@ -174,6 +184,26 @@ const CustomersPage: React.FC = () => {
                         <div className="flex items-center text-gray-500">
                           <Mail className="h-4 w-4 mr-2" />
                           {customer.email}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="text-sm text-gray-500">
+                          {customer.contactDetails?.phone || customer.phone || 'N/A'}
+                          {customer.contactDetails?.address && (
+                            <div className="text-xs text-gray-400 truncate max-w-xs">
+                              {customer.contactDetails.address}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="text-sm font-medium">
+                          {customer.totalOrders || 0} orders
+                        </div>
+                      </td>
+                      <td>
+                        <div className="text-sm font-medium">
+                          ₹{customer.totalSpent?.toFixed(2) || '0.00'}
                         </div>
                       </td>
                       <td>

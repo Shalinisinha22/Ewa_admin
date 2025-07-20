@@ -10,20 +10,13 @@ interface CategoryFormData {
   slug: string;
   description?: string;
   image?: string;
-  productType: string; // Changed from union type to string
   parent: string;
 }
 
-interface ProductType {
-  _id: string;
-  value:string;
-  name:string;
-}
 
 interface Category {
   _id: string;
   name: string;
-  productType: string;
 }
 
 
@@ -34,7 +27,6 @@ const initialFormData: CategoryFormData = {
   slug: '',
   description: undefined, // Change from empty string to undefined
   image: undefined,      // Change from empty string to undefined
-  productType: '', // Changed from 'dress' to empty string
   parent: '',
 };
 
@@ -43,7 +35,6 @@ const CategoryFormPage: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<CategoryFormData>(initialFormData);
   const [parentCategories, setParentCategories] = useState<Category[]>([]);
-  const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const isEditing = !!id;
@@ -52,14 +43,10 @@ const CategoryFormPage: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch both categories and product types
-        const [categoriesResponse, productTypesResponse] = await Promise.all([
-          axiosInstance.get('/categories'),
-          axiosInstance.get('/producttypes')
-        ]);
+        // Fetch categories
+        const categoriesResponse = await axiosInstance.get('/categories');
         
         setParentCategories(categoriesResponse.data);
-        setProductTypes(productTypesResponse.data);
 
         // If editing, fetch category details
         if (id) {
@@ -69,7 +56,6 @@ const CategoryFormPage: React.FC = () => {
             slug: category.slug || '',
             description: category.description || undefined,
             image: category.image || undefined,
-            productType: category.productType || '',
             parent: category.parent || '',
           });
         }
@@ -154,7 +140,7 @@ const CategoryFormPage: React.FC = () => {
 
   // Filter parent categories
   const filteredParentCategories = parentCategories.filter(
-    (cat) => cat.productType === formData.productType && (!isEditing || cat._id !== id)
+    (cat) => (!isEditing || cat._id !== id)
   );
 
   if (loading && isEditing) {
@@ -218,25 +204,6 @@ const CategoryFormPage: React.FC = () => {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Product Type*
-              </label>
-              <select
-                name="productType"
-                value={formData.productType}
-                onChange={handleChange}
-                required
-                className="input"
-              >
-                <option value="">Select Product Type</option>
-                {productTypes.map((type) => (
-                  <option key={type._id} value={type._id}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

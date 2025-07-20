@@ -1,17 +1,9 @@
-export interface ProductType {
-  _id: string;
-  value: string;
-  label: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface Category {
   _id: string;
   name: string;
   description: string;
   slug: string;
-  productType: string;
   parent?: string;
   image?: string;
 }
@@ -25,7 +17,6 @@ export interface Product {
   category: Category;
   brand: string;
   countInStock: number;
-  productType: string;
   images: string[];
   featured: boolean;
   description: string;
@@ -42,7 +33,8 @@ export interface Product {
   deliveryInfo?: string;
   offers?: string[];
   features?: string[];
-  status?: 'draft' | 'live';
+  status: 'draft' | 'live';
+  stock: number;
 }
 
 export interface Order {
@@ -89,6 +81,10 @@ export interface Customer {
   createdAt: string;
   totalOrders?: number;
   totalSpent?: number;
+  contactDetails?: {
+    phone?: string;
+    address?: string;
+  };
 }
 
 export interface Coupon {
@@ -110,7 +106,7 @@ export interface Banner {
   title: string;
   image: string;
   link?: string;
-  position: 'hero' | 'sidebar' | 'popup';
+  position: 'hero' | 'sidebar' | 'popup' | 'about' | 'contact' | 'terms' | 'privacy' | 'refund' | 'shipping';
   isActive: boolean;
   startDate?: string;
   endDate?: string;
@@ -159,6 +155,7 @@ export interface StoreSettings {
   storeDescription: string;
   logo?: string;
   favicon?: string;
+  domain?: string;
   address: string;
   phone: string;
   email: string;
@@ -167,6 +164,7 @@ export interface StoreSettings {
     instagram?: string;
     twitter?: string;
     youtube?: string;
+    linkedin?: string;
   };
   seo: {
     metaTitle: string;

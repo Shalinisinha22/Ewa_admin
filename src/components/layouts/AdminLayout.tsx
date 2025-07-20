@@ -31,7 +31,6 @@ const AdminLayout: React.FC = () => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: BarChart },
     { name: 'Products', href: '/products', icon: Package },
-    { name: 'Product Types', href: '/product-types', icon: Tag },
     { name: 'Categories', href: '/categories', icon: Tag },
     { name: 'Orders', href: '/orders', icon: ShoppingBag },
     { name: 'Customers', href: '/customers', icon: Users },

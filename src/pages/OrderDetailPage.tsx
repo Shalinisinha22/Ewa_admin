@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../config/axios';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Clock } from 'lucide-react';
+import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Clock, Printer, RefreshCw } from 'lucide-react';
 
 interface OrderItem {
   _id: string;
@@ -57,6 +57,9 @@ const OrderDetailPage: React.FC = () => {
   const [error, setError] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [newStatus, setNewStatus] = useState<OrderStatus>('Pending');
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundReason, setRefundReason] = useState('');
 
   const fetchOrderDetails = async () => {
     try {
@@ -111,6 +114,93 @@ const OrderDetailPage: React.FC = () => {
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to mark order as paid';
       toast.error(message);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const handlePrintInvoice = () => {
+    // Generate GST Invoice
+    const invoiceWindow = window.open('', '_blank');
+    if (invoiceWindow) {
+      invoiceWindow.document.write(`
+        <html>
+          <head>
+            <title>GST Invoice - ${order._id}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              .header { text-align: center; margin-bottom: 30px; }
+              .invoice-details { margin-bottom: 20px; }
+              .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+              .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              .items-table th { background-color: #f2f2f2; }
+              .total-section { text-align: right; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>GST INVOICE</h1>
+              <h2>EWA Fashion</h2>
+            </div>
+            <div class="invoice-details">
+              <p><strong>Invoice No:</strong> INV-${order._id.substring(order._id.length - 6)}</p>
+              <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}</p>
+              <p><strong>Customer:</strong> ${order.user.name}</p>
+              <p><strong>Email:</strong> ${order.user.email}</p>
+            </div>
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${order.orderItems.map(item => `
+                  <tr>
+                    <td>${item.name}</td>
+                    <td>${item.qty}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>₹${(item.qty * item.price).toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div class="total-section">
+              <p>Subtotal: ₹${(order.totalPrice - order.taxPrice - order.shippingPrice).toFixed(2)}</p>
+              <p>Shipping: ₹${order.shippingPrice.toFixed(2)}</p>
+              <p>GST (18%): ₹${order.taxPrice.toFixed(2)}</p>
+              <p><strong>Total: ₹${order.totalPrice.toFixed(2)}</strong></p>
+            </div>
+          </body>
+        </html>
+      `);
+      invoiceWindow.document.close();
+      invoiceWindow.print();
+    }
+  };
+
+  const handleInitiateRefund = async () => {
+    if (!refundAmount || !refundReason) {
+      toast.error('Please fill in all refund details');
+      return;
+    }
+
+    try {
+      setUpdatingStatus(true);
+      await axiosInstance.post(`/orders/${id}/refund`, {
+        amount: parseFloat(refundAmount),
+        reason: refundReason,
+      });
+      toast.success('Refund initiated successfully');
+      setShowRefundModal(false);
+      setRefundAmount('');
+      setRefundReason('');
+      await fetchOrderDetails();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to initiate refund');
     } finally {
       setUpdatingStatus(false);
     }
@@ -328,6 +418,22 @@ const OrderDetailPage: React.FC = () => {
                   Mark as Paid
                 </button>
               )}
+              
+              <button
+                onClick={handlePrintInvoice}
+                className="w-full btn btn-outline"
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Print GST Invoice
+              </button>
+              
+              <button
+                onClick={() => setShowRefundModal(true)}
+                className="w-full btn bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Initiate Refund
+              </button>
             </div>
           </div>
           
@@ -356,6 +462,58 @@ const OrderDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Refund Modal */}
+      {showRefundModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Initiate Refund</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Refund Amount (₹)
+                  </label>
+                  <input
+                    type="number"
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    className="input"
+                    placeholder="0.00"
+                    max={order.totalPrice}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Refund Reason
+                  </label>
+                  <textarea
+                    value={refundReason}
+                    onChange={(e) => setRefundReason(e.target.value)}
+                    className="input h-20"
+                    placeholder="Enter reason for refund"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button
+                    onClick={() => setShowRefundModal(false)}
+                    className="btn btn-outline"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleInitiateRefund}
+                    disabled={updatingStatus}
+                    className="btn btn-primary"
+                  >
+                    {updatingStatus ? 'Processing...' : 'Initiate Refund'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

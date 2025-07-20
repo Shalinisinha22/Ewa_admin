@@ -9,7 +9,6 @@ interface Category {
   name: string;
   description: string;
   slug: string;
-  productType: string;
   parent?: string;
   image?: string;
 }
@@ -108,10 +107,10 @@ const CategoriesPage: React.FC = () => {
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
+                Description
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Description
+                Parent Category
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
@@ -127,13 +126,13 @@ const CategoriesPage: React.FC = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">
-                    {category.productType}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
                   <div className="text-sm text-gray-500 truncate max-w-xs">
                     {category.description}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">
+                    {category.parent ? 'Subcategory' : 'Main Category'}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

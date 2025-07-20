@@ -15,9 +15,10 @@ interface Product {
   };
   brand: string;
   countInStock: number;
-  productType: string;
   images: string[];
   featured: boolean;
+  status: 'draft' | 'live';
+  stock: number;
 }
 
 const ProductsPage: React.FC = () => {
@@ -29,16 +30,16 @@ const ProductsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [productType, setProductType] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchProducts = async (page = 1, type = '', search = '') => {
+  const fetchProducts = async (page = 1, status = '', search = '') => {
     try {
       setLoading(true);
       const { data } = await axiosInstance.get('/products', {
         params: { 
           pageNumber: page,
-          productType: type || undefined,
+          status: status || undefined,
           keyword: search || undefined
         },
       });
@@ -56,47 +57,31 @@ const ProductsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchProducts(currentPage, productType, searchTerm);
-  }, [currentPage, productType]);
+    fetchProducts(currentPage, statusFilter, searchTerm);
+  }, [currentPage, statusFilter]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    fetchProducts(1, productType, searchTerm);
+    fetchProducts(1, statusFilter, searchTerm);
   };
 
   const handleDeleteProduct = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await axios.delete(`/api/products/${id}`);
-        fetchProducts(currentPage, productType, searchTerm);
+    fetchProducts(currentPage, statusFilter, searchTerm);
       } catch (err: any) {
         setError(err.response?.data?.message || 'Error deleting product');
       }
     }
   };
 
-  const getProductTypeIcon = (type: string) => {
-    switch (type) {
-      case 'dress':
-        return '👗';
-      case 'cosmetic':
-        return '💄';
-      case 'accessory':
-        return '📦';
-      case 'jewelry':
-        return '💍';
-      default:
-        return '🛍️';
-    }
-  };
 
-  const productTypeOptions = [
-    { value: '', label: 'All Types' },
-    { value: 'dress', label: 'Dresses' },
-    { value: 'cosmetic', label: 'Cosmetics' },
-    { value: 'accessory', label: 'Accessories' },
-    { value: 'jewelry', label: 'Jewelry' },
+  const statusOptions = [
+    { value: '', label: 'All Status' },
+    { value: 'live', label: 'Live' },
+    { value: 'draft', label: 'Draft' },
   ];
 
   // Add early return for loading state
@@ -164,14 +149,14 @@ const ProductsPage: React.FC = () => {
             <div className="flex items-center">
               <Filter className="h-5 w-5 text-gray-400 mr-2" />
               <select
-                value={productType}
+                value={statusFilter}
                 onChange={(e) => {
-                  setProductType(e.target.value);
+                  setStatusFilter(e.target.value);
                   setCurrentPage(1);
                 }}
                 className="input"
               >
-                {productTypeOptions.map((option) => (
+                {statusOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -210,9 +195,10 @@ const ProductsPage: React.FC = () => {
                 <tr>
                   <th>Image</th>
                   <th>Name</th>
-                  <th>Type</th>
+                  <th>Category</th>
                   <th>Price</th>
                   <th>Stock</th>
+                  <th>Status</th>
                   <th>Featured</th>
                   <th>Actions</th>
                 </tr>
@@ -240,12 +226,7 @@ const ProductsPage: React.FC = () => {
                       <div className="text-xs text-gray-500">{product.brand}</div>
                     </td>
                     <td>
-                      <div className="flex items-center">
-                        <span className="flex items-center bg-gray-100 px-2 py-1 rounded text-xs">
-                          {getProductTypeIcon(product.productType)}
-                          <span className="ml-1 capitalize">{product.productType}</span>
-                        </span>
-                      </div>
+                      <span className="text-sm">{product.category?.name || 'No Category'}</span>
                     </td>
                     <td>
                       <div className="font-medium">${product.price.toFixed(2)}</div>
@@ -256,8 +237,13 @@ const ProductsPage: React.FC = () => {
                       )}
                     </td>
                     <td>
-                      <span className={product.countInStock > 0 ? 'text-green-600' : 'text-red-600'}>
-                        {product.countInStock > 0 ? product.countInStock : 'Out of stock'}
+                      <span className={product.stock > 0 ? 'text-green-600' : 'text-red-600'}>
+                        {product.stock > 0 ? product.stock : 'Out of stock'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`badge ${product.status === 'live' ? 'badge-success' : 'badge-warning'}`}>
+                        {product.status === 'live' ? 'Live' : 'Draft'}
                       </span>
                     </td>
                     <td>

@@ -7,7 +7,7 @@ interface Banner {
   title: string;
   image: string;
   link?: string;
-  position: 'hero' | 'sidebar' | 'popup';
+  position: 'hero' | 'sidebar' | 'popup' | 'about' | 'contact' | 'terms' | 'privacy' | 'refund' | 'shipping';
   isActive: boolean;
   startDate?: string;
   endDate?: string;
@@ -23,7 +23,7 @@ const BannersPage: React.FC = () => {
     title: '',
     image: '',
     link: '',
-    position: 'hero' as 'hero' | 'sidebar' | 'popup',
+    position: 'hero' as 'hero' | 'sidebar' | 'popup' | 'about' | 'contact' | 'terms' | 'privacy' | 'refund' | 'shipping',
     isActive: true,
     startDate: '',
     endDate: '',
@@ -50,6 +50,22 @@ const BannersPage: React.FC = () => {
         position: 'sidebar',
         isActive: true,
         createdAt: '2024-05-20',
+      },
+      {
+        _id: '3',
+        title: 'About Us Banner',
+        image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800',
+        position: 'about',
+        isActive: true,
+        createdAt: '2024-05-25',
+      },
+      {
+        _id: '4',
+        title: 'Popup Offer',
+        image: 'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=400',
+        position: 'popup',
+        isActive: true,
+        createdAt: '2024-05-30',
       },
     ];
     setBanners(mockBanners);
@@ -163,12 +179,18 @@ const BannersPage: React.FC = () => {
                 </label>
                 <select
                   value={formData.position}
-                  onChange={(e) => setFormData({ ...formData, position: e.target.value as 'hero' | 'sidebar' | 'popup' })}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value as 'hero' | 'sidebar' | 'popup' | 'about' | 'contact' | 'terms' | 'privacy' | 'refund' | 'shipping' })}
                   className="input"
                 >
                   <option value="hero">Hero Banner</option>
                   <option value="sidebar">Sidebar Banner</option>
                   <option value="popup">Popup Banner</option>
+                  <option value="about">About Page</option>
+                  <option value="contact">Contact Page</option>
+                  <option value="terms">Terms Page</option>
+                  <option value="privacy">Privacy Page</option>
+                  <option value="refund">Refund Page</option>
+                  <option value="shipping">Shipping Page</option>
                 </select>
               </div>
 
