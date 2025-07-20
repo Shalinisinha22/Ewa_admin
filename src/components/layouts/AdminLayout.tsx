@@ -11,7 +11,13 @@ import {
   X, 
   LogOut, 
   Search,
-  Bell
+  Bell,
+  Percent,
+  Image,
+  Truck,
+  CreditCard,
+  FileText,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../ui/Logo';
@@ -29,6 +35,12 @@ const AdminLayout: React.FC = () => {
     { name: 'Categories', href: '/categories', icon: Tag },
     { name: 'Orders', href: '/orders', icon: ShoppingBag },
     { name: 'Customers', href: '/customers', icon: Users },
+    { name: 'Coupons', href: '/coupons', icon: Percent },
+    { name: 'Banners', href: '/banners', icon: Image },
+    { name: 'Pages', href: '/pages', icon: FileText },
+    { name: 'Shipping', href: '/shipping', icon: Truck },
+    { name: 'Payments', href: '/payments', icon: CreditCard },
+    { name: 'Reports', href: '/reports', icon: TrendingUp },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 

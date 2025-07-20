@@ -17,6 +17,13 @@ import OrderDetailPage from './pages/OrderDetailPage';
 import CustomersPage from './pages/CustomersPage';
 import SettingsPage from './pages/SettingsPage';
 import ProductTypesPage from './pages/ProductTypesPage';
+import CouponsPage from './pages/CouponsPage';
+import BannersPage from './pages/BannersPage';
+import PagesPage from './pages/PagesPage';
+import ShippingPage from './pages/ShippingPage';
+import PaymentsPage from './pages/PaymentsPage';
+import ReportsPage from './pages/ReportsPage';
+import BulkUploadPage from './pages/BulkUploadPage';
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -62,6 +69,13 @@ function App() {
         <Route path="customers" element={<CustomersPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="product-types" element={<ProductTypesPage />} />
+        <Route path="coupons" element={<CouponsPage />} />
+        <Route path="banners" element={<BannersPage />} />
+        <Route path="pages" element={<PagesPage />} />
+        <Route path="shipping" element={<ShippingPage />} />
+        <Route path="payments" element={<PaymentsPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="products/bulk-upload" element={<BulkUploadPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/\" replace />} />
