@@ -240,9 +240,15 @@ const OrderDetailPage: React.FC = () => {
                   <div key={item._id} className="flex items-center py-3 border-b border-gray-100">
                     <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                       <img
-                        src={item.image}
+                        src={item.image.startsWith('http') 
+                          ? item.image 
+                          : `http://localhost:5000${item.image.startsWith('/') ? item.image : `/${item.image}`}`}
                         alt={item.name}
                         className="h-full w-full object-cover object-center"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NzM4NyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                        }}
                       />
                     </div>
                     <div className="ml-4 flex-1">

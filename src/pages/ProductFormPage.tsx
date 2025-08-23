@@ -56,6 +56,8 @@ interface ProductFormData {
   };
   status: 'draft' | 'active' | 'inactive' | 'out_of_stock';
   featured: boolean;
+  isNewArrival: boolean;
+  isTrending: boolean;
   tags?: string[];
   shipping?: {
     weight?: number;
@@ -99,6 +101,8 @@ const initialFormData: ProductFormData = {
   },
   status: 'draft',
   featured: false,
+  isNewArrival: false,
+  isTrending: false,
   tags: [],
   shipping: {
     weight: 0,
@@ -348,10 +352,15 @@ const ProductFormPage: React.FC = () => {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         
-        setFormData((prev) => ({
-          ...prev,
-          images: [...prev.images, data.url],
-        }));
+        setFormData((prev) => {
+          const newImages = [...prev.images, data.url];
+          console.log('Adding image to state:', data.url);
+          console.log('New images array:', newImages);
+          return {
+            ...prev,
+            images: newImages,
+          };
+        });
         toast.success('Image uploaded successfully');
       } else {
         // Multiple files upload
@@ -364,10 +373,15 @@ const ProductFormPage: React.FC = () => {
         });
         
         const imageUrls = data.map((item: any) => item.url);
-        setFormData((prev) => ({
-          ...prev,
-          images: [...prev.images, ...imageUrls],
-        }));
+        setFormData((prev) => {
+          const newImages = [...prev.images, ...imageUrls];
+          console.log('Adding multiple images to state:', imageUrls);
+          console.log('New images array:', newImages);
+          return {
+            ...prev,
+            images: newImages,
+          };
+        });
         toast.success(`Uploaded ${imageUrls.length} images successfully`);
       }
     } catch (err: any) {
@@ -393,12 +407,44 @@ const ProductFormPage: React.FC = () => {
       setVideoUploading(true);
       const formData = new FormData();
       
+      // Check file sizes before upload
+      const maxSize = 100 * 1024 * 1024; // 100MB
+      for (let i = 0; i < files.length; i++) {
+        if (files[i].size > maxSize) {
+          toast.error(`File ${files[i].name} is too large. Maximum size is 100MB.`);
+          return;
+        }
+      }
+
+      // Validate video file types
+      const allowedVideoTypes = [
+        'video/mp4',
+        'video/avi',
+        'video/mov',
+        'video/wmv',
+        'video/flv',
+        'video/webm',
+        'video/mkv',
+        'video/3gp',
+        'video/ogg'
+      ];
+
+      for (let i = 0; i < files.length; i++) {
+        if (!allowedVideoTypes.includes(files[i].type)) {
+          toast.error(`File ${files[i].name} has an unsupported format. Supported formats: MP4, AVI, MOV, WMV, FLV, WebM, MKV, 3GP, OGG`);
+          return;
+        }
+      }
+      
       // Use the correct endpoint and field name for multiple files
       if (files.length === 1) {
         // Single file upload
         formData.append('video', files[0]);
+        console.log('Uploading video:', files[0].name, 'Size:', files[0].size);
+        
         const { data } = await axiosInstance.post('/upload/video', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 300000, // 5 minutes timeout
         });
         
         setFormData((prev) => ({
@@ -410,10 +456,12 @@ const ProductFormPage: React.FC = () => {
         // Multiple files upload
         for (let i = 0; i < files.length; i++) {
           formData.append('videos', files[i]);
+          console.log(`Uploading video ${i + 1}:`, files[i].name, 'Size:', files[i].size);
         }
         
         const { data } = await axiosInstance.post('/upload/videos', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 600000, // 10 minutes timeout for multiple files
         });
         
         const videoUrls = data.map((item: any) => item.url);
@@ -424,8 +472,29 @@ const ProductFormPage: React.FC = () => {
         toast.success(`Uploaded ${videoUrls.length} videos successfully`);
       }
     } catch (err: any) {
-      console.error('Upload error:', err);
-      toast.error(err.response?.data?.message || 'Failed to upload videos');
+      console.error('Video upload error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+        code: err.code
+      });
+      
+      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+        toast.error('Video upload timed out. Please try with a smaller file or check your connection.');
+      } else if (err.response?.status === 408) {
+        toast.error(err.response.data.message || 'Video upload timed out.');
+      } else if (err.response?.status === 400) {
+        toast.error(err.response.data.message || 'Invalid video file.');
+      } else if (err.response?.status === 413) {
+        toast.error('Video file too large. Please try with a smaller file.');
+      } else if (err.response?.status === 401) {
+        toast.error('Authentication failed. Please log in again.');
+      } else if (err.response?.status === 500) {
+        toast.error('Server error. Please try again later.');
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to upload videos. Please try again.');
+      }
     } finally {
       setVideoUploading(false);
     }
@@ -447,6 +516,8 @@ const ProductFormPage: React.FC = () => {
       // Clean up the data before sending
       const cleanedData = {
         ...formData,
+        images: formData.images || [],
+        videos: formData.videos || [],
         discountPrice: formData.discountPrice || undefined,
         oldPrice: formData.oldPrice || undefined,
         cost: formData.cost || undefined,
@@ -466,6 +537,11 @@ const ProductFormPage: React.FC = () => {
           shippingClass: formData.shipping?.shippingClass || undefined
         }
       };
+      
+      // Debug: Log the data being sent
+      console.log('FormData images:', formData.images);
+      console.log('FormData videos:', formData.videos);
+      console.log('CleanedData being sent:', cleanedData);
       
       if (isEditing) {
         await axiosInstance.put(`/products/${id}`, cleanedData);
@@ -491,6 +567,8 @@ const ProductFormPage: React.FC = () => {
       const cleanedData = {
         ...formData,
         status: 'draft', // Force status to draft
+        images: formData.images || [],
+        videos: formData.videos || [],
         discountPrice: formData.discountPrice || undefined,
         oldPrice: formData.oldPrice || undefined,
         cost: formData.cost || undefined,
@@ -740,6 +818,42 @@ const ProductFormPage: React.FC = () => {
                 />
                 <span className="ml-2 text-sm text-gray-600">
                   Display this product on the featured section
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                New Arrival
+              </label>
+              <div className="mt-2">
+                <input
+                  type="checkbox"
+                  name="isNewArrival"
+                  checked={formData.isNewArrival}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-600">
+                  Mark this product as a new arrival
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Trending Product
+              </label>
+              <div className="mt-2">
+                <input
+                  type="checkbox"
+                  name="isTrending"
+                  checked={formData.isTrending}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-600">
+                  Mark this product as trending
                 </span>
               </div>
             </div>
@@ -1159,8 +1273,10 @@ const ProductFormPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {formData.images.map((image, index) => {
              
-                // Ensure the URL starts with http://localhost:5000 for relative paths
-                const fullImageUrl = `http://localhost:5000${image}`;
+                // Handle both Cloudinary URLs and local paths
+                const fullImageUrl = image.startsWith('http') 
+                  ? image 
+                  : `http://localhost:5000${image}`;
                 
                 console.log(`Image ${index + 1}:`, {
                   original: image,
@@ -1233,11 +1349,11 @@ const ProductFormPage: React.FC = () => {
               </label>
               {videoUploading && (
                 <span className="ml-3 text-sm text-gray-500 inline-flex items-center">
-                  <Loader className="animate-spin h-4 w-4 mr-1" /> Uploading...
+                  <Loader className="animate-spin h-4 w-4 mr-1" /> Uploading videos to Cloudinary...
                 </span>
               )}
               <p className="mt-2 text-sm text-gray-500">
-                You can select multiple videos. Supported formats: MP4, WebM, MOV, AVI
+                You can select multiple videos. Supported formats: MP4, AVI, MOV, WMV, FLV, WebM, MKV, 3GP, OGG (Max 100MB each)
               </p>
             </div>
             
@@ -1249,7 +1365,7 @@ const ProductFormPage: React.FC = () => {
                 
                 const fullVideoUrl = cleanVideoUrl.startsWith('http') 
                   ? cleanVideoUrl 
-                  : `http://localhost:5000${cleanVideoUrl.startsWith('/') ? cleanVideoUrl : `/${cleanVideoUrl}`}`; // Add backend URL if relative
+                  : `http://localhost:5000${cleanVideoUrl.startsWith('/') ? cleanVideoUrl : `/${cleanVideoUrl}`}`;
                 
                 return (
                   <div key={index} className="relative border rounded-md overflow-hidden h-48 bg-gray-50">
