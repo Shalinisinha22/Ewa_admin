@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000/api',
-  // baseURL:'https://ewa-back.vercel.app/api',
+  // baseURL: 'http://localhost:5000/api',
+  baseURL:'https://ewa-back.vercel.app/api',
   headers: {
     'Content-Type': 'application/json'
   }
