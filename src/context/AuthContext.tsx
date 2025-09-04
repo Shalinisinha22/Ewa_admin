@@ -18,6 +18,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
+  forgotPassword: (email: string) => Promise<{ message: string; resetToken?: string }>;
+  resetPassword: (token: string, newPassword: string) => Promise<{ message: string }>;
   isAuthenticated: boolean;
   loading: boolean;
 }
@@ -150,8 +152,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    try {
+      setLoading(true);
+      const { data } = await axiosInstance.post('/admin/forgot-password', { email });
+      return data;
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      throw error.response?.data?.message || 'Failed to send reset email';
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    try {
+      setLoading(true);
+      const { data } = await axiosInstance.post('/admin/reset-password', { 
+        token, 
+        newPassword 
+      });
+      return data;
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      throw error.response?.data?.message || 'Failed to reset password';
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, isAuthenticated, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, forgotPassword, resetPassword, isAuthenticated, loading }}>
       {children}
     </AuthContext.Provider>
   );

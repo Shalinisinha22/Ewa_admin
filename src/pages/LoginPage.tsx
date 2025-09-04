@@ -2,12 +2,14 @@ import React, { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -109,12 +111,13 @@ const LoginPage: React.FC = () => {
               </div>
 
               <div className="text-sm">
-                <a
-                  href="#"
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
                   className="font-medium text-primary-600 hover:text-primary-500"
                 >
                   Forgot your password?
-                </a>
+                </button>
               </div>
             </div>
 
@@ -158,6 +161,11 @@ const LoginPage: React.FC = () => {
           </form>
         </div>
       </div>
+
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </div>
   );
 };
