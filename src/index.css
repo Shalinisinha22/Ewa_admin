@@ -5,6 +5,31 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Default theme colors - will be overridden by dynamic theme */
+    --color-primary-50: #f9e6e6;
+    --color-primary-100: #f3cccd;
+    --color-primary-200: #e7999a;
+    --color-primary-300: #db6667;
+    --color-primary-400: #cf3334;
+    --color-primary-500: #c30001;
+    --color-primary-600: #9c0001;
+    --color-primary-700: #750001;
+    --color-primary-800: #4e0000;
+    --color-primary-900: #270000;
+    
+    --color-secondary-50: #f1f1f1;
+    --color-secondary-100: #e3e3e3;
+    --color-secondary-200: #c7c7c7;
+    --color-secondary-300: #ababab;
+    --color-secondary-400: #8f8f8f;
+    --color-secondary-500: #737373;
+    --color-secondary-600: #5a5a5a;
+    --color-secondary-700: #414141;
+    --color-secondary-800: #292929;
+    --color-secondary-900: #121212;
+  }
+  
   body {
     @apply bg-gray-50 font-sans text-secondary-800;
   }

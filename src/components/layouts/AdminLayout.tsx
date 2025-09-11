@@ -22,10 +22,12 @@ import {
   Clock
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useStore } from '../../context/StoreContext';
 import Logo from '../ui/Logo';
 
 const AdminLayout: React.FC = () => {
   const { user, logout } = useAuth();
+  const { store } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -194,10 +196,10 @@ const AdminLayout: React.FC = () => {
               <h1 className="text-2xl font-semibold text-gray-900">
                 {navigation.find((nav) => nav.href === location.pathname)?.name || 'Dashboard'}
               </h1>
-              {user?.storeName && (
+              {(store?.name || user?.storeName) && (
                 <p className="text-sm text-gray-500 flex items-center mt-1">
                   <Store className="h-4 w-4 mr-1" />
-                  {user.storeName}
+                  {store?.name || user?.storeName}
                 </p>
               )}
             </div>

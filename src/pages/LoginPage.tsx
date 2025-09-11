@@ -34,10 +34,10 @@ const LoginPage: React.FC = () => {
           <ShoppingBag className="h-16 w-16 text-primary-500" />
         </div>
         <h2 className="mt-3 text-center text-3xl font-extrabold text-white">
-          EWA <span className="text-primary-500">Admin</span>
+           <span className="text-primary-500">Admin Panel</span>
         </h2>
         <p className="mt-2 text-center text-sm text-gray-400">
-          Fashion Admin Dashboard
+          Store Management Dashboard
         </p>
       </div>
 
